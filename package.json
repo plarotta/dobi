@@ -1,0 +1,30 @@
+{
+  "name": "dobi",
+  "version": "0.1.0",
+  "description": "AI-powered personal scrum master for your terminal",
+  "type": "module",
+  "bin": {
+    "dobi": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "start": "node ./dist/index.js"
+  },
+  "dependencies": {
+    "@mariozechner/pi-ai": "^0.65.2",
+    "@mariozechner/pi-agent-core": "^0.65.2",
+    "@mariozechner/pi-tui": "^0.65.2",
+    "@sinclair/typebox": "^0.34.41",
+    "chalk": "^5.6.2",
+    "nanoid": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}
