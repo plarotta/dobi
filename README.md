@@ -21,6 +21,8 @@ npm start
 npm link 
 ```
 
+(will publish to npm after some user testing)
+
 On first launch, dobi creates a `.dobi/` directory in your project root and walks you through setting up your first backlog items.
 
 ## Usage
