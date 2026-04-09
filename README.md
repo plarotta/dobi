@@ -16,6 +16,9 @@ export ANTHROPIC_API_KEY=sk-ant-...
 # Build and run
 npm run build
 npm start
+
+# to use in other projects, run this once and then you should be able to use dobi commands outside of this repo
+npm link 
 ```
 
 On first launch, dobi creates a `.dobi/` directory in your project root and walks you through setting up your first backlog items.
