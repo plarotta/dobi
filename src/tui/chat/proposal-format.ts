@@ -12,6 +12,7 @@ function formatBacklogAdd(data: Item[]): string {
     .map((item, i) => {
       const lines = [
         `Item ${i + 1}:`,
+        `  ID: ${item.id}`,
         `  Title: ${item.title}`,
         `  Points: ${item.points}`,
         `  Tags: ${item.tags.join(", ") || "none"}`,
