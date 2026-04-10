@@ -6,6 +6,7 @@ import { getCurrentSprint } from "../data/sprints.js";
 import { ChatView } from "./chat/chat-view.js";
 import { ChatInput } from "./chat/input.js";
 import { DashboardView } from "./dashboard/dashboard-view.js";
+import { Banner } from "./banner.js";
 import { colors } from "./theme.js";
 
 function buildProgressBar(pct: number, width: number): string {
@@ -51,6 +52,7 @@ export function launchApp({ dataDir, agent, approvalManager, openingPrompt }: Ap
   const terminal = new ProcessTerminal();
   const tui = new TUI(terminal, true);
 
+  const banner = new Banner();
   const statusBar = new Text(buildStatusText(dataDir));
   const chatView = new ChatView(tui, agent, approvalManager);
   const input = new ChatInput(tui, agent);
@@ -67,6 +69,7 @@ export function launchApp({ dataDir, agent, approvalManager, openingPrompt }: Ap
 
   input.onError = showError;
 
+  tui.addChild(banner);
   tui.addChild(statusBar);
   tui.addChild(chatView);
   tui.addChild(input);
