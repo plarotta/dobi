@@ -7,6 +7,8 @@ import { ApprovalManager } from "./agent/approval.js";
 import { createAgent } from "./agent/agent.js";
 import { loadSession, saveSession, pruneSession } from "./agent/session.js";
 import { launchApp } from "./tui/app.js";
+import { loadConfig, runSetup } from "./setup.js";
+import type { DobiConfig } from "./setup.js";
 
 function parseArgs(): { cmd?: string } {
   const args = process.argv.slice(2);
@@ -17,25 +19,13 @@ function parseArgs(): { cmd?: string } {
   return {};
 }
 
-function checkApiKey(): void {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.error(
-      "Missing ANTHROPIC_API_KEY environment variable.\n\n" +
-        "Set it in your shell:\n" +
-        "  export ANTHROPIC_API_KEY=sk-ant-...\n\n" +
-        "Get a key at https://console.anthropic.com/settings/keys"
-    );
-    process.exit(1);
-  }
-}
-
 function isFirstRun(dataDir: string): boolean {
   return !existsSync(join(dataDir, "backlog.md"));
 }
 
-async function runCli(cmd: string, dataDir: string): Promise<void> {
+async function runCli(cmd: string, dataDir: string, config: DobiConfig): Promise<void> {
   const approvalManager = new ApprovalManager();
-  const agent = createAgent(dataDir, approvalManager);
+  const agent = createAgent(dataDir, approvalManager, config);
 
   // Auto-approve all proposals in CLI mode
   approvalManager.on("proposal", (toolCallId: string) => {
@@ -62,14 +52,14 @@ async function runCli(cmd: string, dataDir: string): Promise<void> {
   saveSession(dataDir, agent.state.messages);
 }
 
-async function runTui(dataDir: string): Promise<void> {
+async function runTui(dataDir: string, config: DobiConfig): Promise<void> {
   const approvalManager = new ApprovalManager();
-  const agent = createAgent(dataDir, approvalManager);
+  const agent = createAgent(dataDir, approvalManager, config);
 
   // Restore and prune previous session
   const previousMessages = loadSession(dataDir);
   if (previousMessages) {
-    agent.state.messages = await pruneSession(previousMessages);
+    agent.state.messages = await pruneSession(previousMessages, config);
   }
 
   const openingPrompt = isFirstRun(dataDir)
@@ -80,14 +70,18 @@ async function runTui(dataDir: string): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  checkApiKey();
+  let config = loadConfig();
+  if (!config) {
+    config = await runSetup();
+  }
+
   const dataDir = ensureStructure();
   const { cmd } = parseArgs();
 
   if (cmd) {
-    await runCli(cmd, dataDir);
+    await runCli(cmd, dataDir, config);
   } else {
-    runTui(dataDir);
+    await runTui(dataDir, config);
   }
 }
 

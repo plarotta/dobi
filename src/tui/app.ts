@@ -8,9 +8,15 @@ import { ChatInput } from "./chat/input.js";
 import { DashboardView } from "./dashboard/dashboard-view.js";
 import { colors } from "./theme.js";
 
+function buildProgressBar(pct: number, width: number): string {
+  const filled = Math.round((pct / 100) * width);
+  const empty = width - filled;
+  return colors.accepted("█".repeat(filled)) + colors.border("░".repeat(empty));
+}
+
 function buildStatusText(dataDir: string): string {
   const sprint = getCurrentSprint(dataDir);
-  if (!sprint) return colors.header("  DOBI") + colors.muted("  No active sprint");
+  if (!sprint) return colors.logo("  ◆ ") + colors.assistantLabel("dobi") + colors.statusText("  No active sprint");
 
   const start = new Date(sprint.startDate);
   const end = new Date(sprint.endDate);
@@ -22,9 +28,15 @@ function buildStatusText(dataDir: string): string {
     .reduce((sum, i) => sum + i.points, 0);
   const pct = sprint.plannedPoints > 0 ? Math.round((donePoints / sprint.plannedPoints) * 100) : 0;
 
+  const bar = buildProgressBar(pct, 12);
   return (
-    colors.header("  DOBI") +
-    colors.muted(`  Sprint ${sprint.number} · Day ${elapsed}/${totalDays} · ${pct}% done`)
+    colors.logo("  ◆ ") + colors.assistantLabel("dobi") +
+    colors.statusText(`  Sprint ${sprint.number}`) +
+    colors.dim(" · ") +
+    colors.statusText(`Day ${elapsed}/${totalDays}`) +
+    colors.dim(" · ") +
+    bar +
+    colors.statusText(` ${pct}%`)
   );
 }
 
@@ -66,6 +78,10 @@ export function launchApp({ dataDir, agent, approvalManager, openingPrompt }: Ap
       input.disableSubmit = true;
     } else if (event.type === "agent_end") {
       input.disableSubmit = false;
+      // Surface errors from the agent run
+      if (agent.state.errorMessage) {
+        showError(new Error(agent.state.errorMessage));
+      }
       statusBar.setText(buildStatusText(dataDir));
       if (mode === "chat") {
         tui.setFocus(input);

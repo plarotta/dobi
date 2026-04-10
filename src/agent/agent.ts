@@ -3,6 +3,7 @@ import type { Message } from "@mariozechner/pi-ai";
 import { getConfiguredModel } from "../config.js";
 import { buildSystemPrompt } from "./system-prompt.js";
 import type { ApprovalManager } from "./approval.js";
+import type { DobiConfig } from "../setup.js";
 
 // Read tools
 import { createReadBacklogTool } from "./tools/read-backlog.js";
@@ -21,8 +22,8 @@ import { createProposeSprintCloseTool } from "./tools/propose-sprint-close.js";
 import { createProposeStandupTool } from "./tools/propose-standup.js";
 import { createProposeRetroTool } from "./tools/propose-retro.js";
 
-export function createAgent(dataDir: string, approvalManager: ApprovalManager): Agent {
-  const model = getConfiguredModel();
+export function createAgent(dataDir: string, approvalManager: ApprovalManager, config: DobiConfig): Agent {
+  const model = getConfiguredModel(config);
   const systemPrompt = buildSystemPrompt(dataDir);
 
   const tools = [

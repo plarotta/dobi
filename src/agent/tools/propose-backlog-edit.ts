@@ -57,7 +57,14 @@ export function createProposeBacklogEditTool(
         result.action === "edit"
           ? (result.data as { item_id: string; updates: Record<string, unknown> }).updates
           : updates;
-      editItem(dataDir, item_id, finalUpdates);
+      try {
+        editItem(dataDir, item_id, finalUpdates);
+      } catch (err) {
+        return {
+          content: [{ type: "text", text: `Failed to write backlog: ${err instanceof Error ? err.message : err}` }],
+          details: { error: "write_failed" },
+        };
+      }
 
       return {
         content: [{ type: "text", text: `Updated item ${item_id}.` }],

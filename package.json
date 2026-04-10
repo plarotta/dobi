@@ -1,5 +1,5 @@
 {
-  "name": "dobi",
+  "name": "@plarotta/dobi",
   "version": "0.1.0",
   "description": "AI-powered personal scrum master for your terminal",
   "type": "module",
@@ -7,6 +7,14 @@
     "dobi": "./dist/index.js"
   },
   "main": "./dist/index.js",
+  "files": ["dist"],
+  "author": "Pedro La Rotta",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/plarotta/dobi"
+  },
+  "keywords": ["scrum", "agile", "cli", "terminal", "ai", "llm", "coding"],
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",

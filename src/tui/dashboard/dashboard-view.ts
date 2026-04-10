@@ -49,10 +49,10 @@ export class DashboardView implements Component, Focusable {
     return (
       "  " +
       TABS.map((tab) => {
-        const text = `[${tab.hotkey}]${tab.label.slice(1)}`;
-        return tab.key === this.activePanel
-          ? colors.header(text)
-          : colors.muted(text);
+        if (tab.key === this.activePanel) {
+          return colors.header(`[${tab.hotkey}] ${tab.label}`);
+        }
+        return colors.dim(`[${tab.hotkey}] ${tab.label}`);
       }).join("  ")
     );
   }

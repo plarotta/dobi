@@ -71,7 +71,14 @@ export function createProposeRetroTool(
       }
 
       const final = result.action === "edit" ? (result.data as Retro) : retroData;
-      writeRetro(dataDir, final);
+      try {
+        writeRetro(dataDir, final);
+      } catch (err) {
+        return {
+          content: [{ type: "text", text: `Failed to write retro: ${err instanceof Error ? err.message : err}` }],
+          details: { error: "write_failed" },
+        };
+      }
 
       return {
         content: [{ type: "text", text: `Retrospective for Sprint ${final.sprintNumber} saved.` }],

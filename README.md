@@ -171,11 +171,11 @@ src/
 
 ## Todo
 
-- [ ] **Fix timezone bug in sprint date calculation** (`src/data/sprints.ts:182-185`) -- `new Date("2026-04-07")` parses as UTC midnight, but `setDate()` operates in local time, producing off-by-one end dates depending on timezone. Use explicit UTC methods or parse date components directly.
-- [ ] **Remove non-null assertion in sprint listing** (`src/data/sprints.ts:136`) -- `f.match(...)![1]` is guarded by a prior filter but fragile if the regexes ever diverge. Use optional chaining with a fallback.
-- [ ] **Re-validate transitions after approval edit** (`src/agent/tools/propose-sprint-update.ts:83-89`) -- When a user edits the approval JSON, the edited updates are applied without re-checking `isValidTransition()`. Invalid manual edits could corrupt sprint state.
-- [ ] **Collect all validation errors in sprint update** (`src/agent/tools/propose-sprint-update.ts:43-61`) -- The validation loop returns on the first bad update. Batch all errors so the user sees which updates are valid and which aren't.
-- [ ] **Add try/catch around file I/O in propose tools** (`src/agent/tools/propose-*.ts`) -- File writes after approval have no error handling. A disk-full or permission error would crash the agent instead of showing an error message.
+- [x] **Fix timezone bug in sprint date calculation** (`src/data/sprints.ts`) -- Parse date components directly to avoid UTC/local mismatch.
+- [x] **Remove non-null assertion in sprint listing** (`src/data/sprints.ts`) -- Use optional chaining with a fallback.
+- [x] **Re-validate transitions after approval edit** (`src/agent/tools/propose-sprint-update.ts`) -- Re-check `isValidTransition()` on edited updates before applying.
+- [x] **Collect all validation errors in sprint update** (`src/agent/tools/propose-sprint-update.ts`) -- Batch all errors so the user sees them at once.
+- [x] **Add try/catch around file I/O in propose tools** (`src/agent/tools/propose-*.ts`) -- All 8 propose tools now catch write errors and return them to the agent.
 
 ## Docs
 

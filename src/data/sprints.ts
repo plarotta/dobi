@@ -133,7 +133,7 @@ function listSprintNumbers(dataDir: string): number[] {
 
   return readdirSync(dir)
     .filter((f) => /^sprint-\d+\.md$/.test(f))
-    .map((f) => parseInt(f.match(/sprint-(\d+)\.md/)![1], 10))
+    .map((f) => parseInt(f.match(/sprint-(\d+)\.md/)?.[1] ?? "0", 10))
     .sort((a, b) => a - b);
 }
 
@@ -178,11 +178,12 @@ export function createSprint(
 ): Sprint {
   const num = nextSprintNumber(dataDir);
 
-  // Compute end date
-  const start = new Date(startDate);
-  const end = new Date(start);
-  end.setDate(end.getDate() + durationWeeks * 7);
-  const endDate = end.toISOString().split("T")[0];
+  // Compute end date using date components to avoid UTC/local timezone mismatch.
+  // new Date("YYYY-MM-DD") parses as UTC midnight, but setDate() operates in local time.
+  const [y, m, d] = startDate.split("-").map(Number);
+  const start = new Date(y, m - 1, d);
+  start.setDate(start.getDate() + durationWeeks * 7);
+  const endDate = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`;
 
   // All items start as todo in a new sprint
   const sprintItems = items.map((item) => ({ ...item, status: "todo" as const }));

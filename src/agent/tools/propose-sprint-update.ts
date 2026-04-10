@@ -38,30 +38,28 @@ export function createProposeSprintUpdateTool(
         };
       }
 
-      // Validate all updates
+      // Validate all updates, collecting all errors at once
       const previewLines: string[] = [];
+      const errors: string[] = [];
       for (const update of updates) {
         const item = sprint.items.find((i) => i.id === update.item_id);
         if (!item) {
-          return {
-            content: [{ type: "text", text: `Item ${update.item_id} not found in current sprint.` }],
-            details: { error: "item_not_found", item_id: update.item_id },
-          };
+          errors.push(`Item ${update.item_id} not found in current sprint.`);
+          continue;
         }
         if (!isValidTransition(item.status, update.new_status)) {
-          return {
-            content: [
-              {
-                type: "text",
-                text: `Invalid transition for ${update.item_id}: ${item.status} → ${update.new_status}`,
-              },
-            ],
-            details: { error: "invalid_transition" },
-          };
+          errors.push(`Invalid transition for ${update.item_id}: ${item.status} → ${update.new_status}`);
+          continue;
         }
         previewLines.push(
           `  ${item.id} "${item.title}": ${item.status} → ${update.new_status}`
         );
+      }
+      if (errors.length > 0) {
+        return {
+          content: [{ type: "text", text: errors.join("\n") }],
+          details: { error: "validation_failed", errors },
+        };
       }
 
       const preview = `Sprint ${sprint.number} status changes:\n${previewLines.join("\n")}`;
@@ -85,8 +83,46 @@ export function createProposeSprintUpdateTool(
           ? (result.data as typeof updates)
           : updates;
 
-      for (const update of finalUpdates) {
-        updateSprintItem(dataDir, sprint.number, update.item_id, update.new_status);
+      // Re-validate after edit in case the user changed values
+      if (result.action === "edit") {
+        const freshSprint = getCurrentSprint(dataDir);
+        if (!freshSprint) {
+          return {
+            content: [{ type: "text", text: "No active sprint." }],
+            details: { error: "no_active_sprint" },
+          };
+        }
+        for (const update of finalUpdates) {
+          const item = freshSprint.items.find((i) => i.id === update.item_id);
+          if (!item) {
+            return {
+              content: [{ type: "text", text: `Item ${update.item_id} not found in current sprint.` }],
+              details: { error: "item_not_found", item_id: update.item_id },
+            };
+          }
+          if (!isValidTransition(item.status, update.new_status)) {
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: `Invalid transition for ${update.item_id}: ${item.status} → ${update.new_status}`,
+                },
+              ],
+              details: { error: "invalid_transition" },
+            };
+          }
+        }
+      }
+
+      try {
+        for (const update of finalUpdates) {
+          updateSprintItem(dataDir, sprint.number, update.item_id, update.new_status);
+        }
+      } catch (err) {
+        return {
+          content: [{ type: "text", text: `Failed to update sprint: ${err instanceof Error ? err.message : err}` }],
+          details: { error: "write_failed" },
+        };
       }
 
       return {

@@ -62,7 +62,14 @@ export function createProposeBacklogAddTool(
       }
 
       const finalItems = result.action === "edit" ? (result.data as Item[]) : items;
-      addItems(dataDir, finalItems);
+      try {
+        addItems(dataDir, finalItems);
+      } catch (err) {
+        return {
+          content: [{ type: "text", text: `Failed to write backlog: ${err instanceof Error ? err.message : err}` }],
+          details: { error: "write_failed" },
+        };
+      }
 
       return {
         content: [{ type: "text", text: `Added ${finalItems.length} item(s) to backlog.` }],

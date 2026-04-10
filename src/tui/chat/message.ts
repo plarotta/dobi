@@ -9,13 +9,12 @@ export class MessageComponent implements Component {
 
   constructor(role: MessageRole, text: string) {
     this.role = role;
-    const prefix = role === "user" ? "> you:" : "dobi:";
     const defaultStyle =
       role === "user"
         ? { color: colors.userMsg }
         : { color: colors.assistantMsg };
     this.md = new Markdown(
-      `${prefix} ${text}`,
+      this.format(text),
       1,
       0,
       markdownTheme,
@@ -23,9 +22,16 @@ export class MessageComponent implements Component {
     );
   }
 
+  private format(text: string): string {
+    // "you " and "dobi" are both 4 chars — keeps message text aligned
+    const label = this.role === "user"
+      ? colors.userLabel("  you ")
+      : colors.assistantLabel("  dobi");
+    return `${label} ${text}`;
+  }
+
   setText(text: string): void {
-    const prefix = this.role === "user" ? "> you:" : "dobi:";
-    this.md.setText(`${prefix} ${text}`);
+    this.md.setText(this.format(text));
   }
 
   invalidate(): void {

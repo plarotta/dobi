@@ -1,14 +1,20 @@
 import { getModel } from "@mariozechner/pi-ai";
+import type { DobiConfig } from "./setup.js";
 
-export function getConfiguredModel() {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) {
-    throw new Error(
-      "Missing ANTHROPIC_API_KEY environment variable.\n\n" +
-        "Set it in your shell:\n" +
-        "  export ANTHROPIC_API_KEY=sk-ant-...\n\n" +
-        "Get a key at https://console.anthropic.com/settings/keys"
-    );
+export function getConfiguredModel(config: DobiConfig) {
+  // Set the provider's env var so pi-ai can pick it up
+  const envVarMap: Record<string, string> = {
+    anthropic: "ANTHROPIC_API_KEY",
+    openai: "OPENAI_API_KEY",
+    google: "GOOGLE_API_KEY",
+    xai: "XAI_API_KEY",
+    groq: "GROQ_API_KEY",
+    openrouter: "OPENROUTER_API_KEY",
+  };
+  const envVar = envVarMap[config.provider];
+  if (envVar && !process.env[envVar]) {
+    process.env[envVar] = config.apiKey;
   }
-  return getModel("anthropic", "claude-sonnet-4-20250514");
+
+  return getModel(config.provider as any, config.model as any);
 }

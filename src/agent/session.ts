@@ -4,6 +4,7 @@ import { complete } from "@mariozechner/pi-ai";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { Message, UserMessage, TextContent } from "@mariozechner/pi-ai";
 import { getConfiguredModel } from "../config.js";
+import type { DobiConfig } from "../setup.js";
 
 const MAX_ARCHIVED = 10;
 const MAX_MESSAGES_BEFORE_PRUNE = 30;
@@ -22,13 +23,53 @@ function currentPath(dataDir: string): string {
 }
 
 /**
+ * Strip orphaned toolResult messages that reference tool_use IDs
+ * not present in the preceding assistant message. The Anthropic API
+ * rejects these with a 400 error.
+ */
+function sanitizeMessages(messages: AgentMessage[]): AgentMessage[] {
+  const result: AgentMessage[] = [];
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i] as Message;
+    if (msg?.role === "toolResult" || (msg?.role === "user" && Array.isArray(msg.content) && msg.content.some((c: any) => c.type === "tool_result"))) {
+      // Find the tool_use IDs in the previous assistant message
+      const prev = result[result.length - 1] as Message | undefined;
+      if (prev?.role === "assistant" && Array.isArray(prev.content)) {
+        const toolUseIds = new Set(
+          prev.content
+            .filter((c: any) => c.type === "tool_use")
+            .map((c: any) => c.id)
+        );
+        if (msg.role === "toolResult") {
+          const tr = msg as any;
+          if (tr.tool_use_id && !toolUseIds.has(tr.tool_use_id)) continue;
+        } else if (Array.isArray(msg.content)) {
+          const filtered = msg.content.filter((c: any) =>
+            c.type !== "tool_result" || toolUseIds.has(c.tool_use_id)
+          );
+          if (filtered.length === 0) continue;
+          result.push({ ...msg, content: filtered } as AgentMessage);
+          continue;
+        }
+      } else {
+        // No preceding assistant message with tool_use — drop this
+        continue;
+      }
+    }
+    result.push(messages[i]);
+  }
+  return result;
+}
+
+/**
  * Load the current session's messages, if any.
  */
 export function loadSession(dataDir: string): AgentMessage[] | null {
   const path = currentPath(dataDir);
   if (!existsSync(path)) return null;
   try {
-    return JSON.parse(readFileSync(path, "utf-8"));
+    const messages = JSON.parse(readFileSync(path, "utf-8"));
+    return sanitizeMessages(messages);
   } catch {
     return null;
   }
@@ -101,7 +142,7 @@ function messagesToText(messages: AgentMessage[]): string {
  * Keeps the last KEEP_RECENT messages in full, replaces older ones with a summary.
  * Returns the original messages if pruning is not needed or fails.
  */
-export async function pruneSession(messages: AgentMessage[]): Promise<AgentMessage[]> {
+export async function pruneSession(messages: AgentMessage[], config: DobiConfig): Promise<AgentMessage[]> {
   if (messages.length <= MAX_MESSAGES_BEFORE_PRUNE) {
     return messages;
   }
@@ -115,7 +156,7 @@ export async function pruneSession(messages: AgentMessage[]): Promise<AgentMessa
   }
 
   try {
-    const model = getConfiguredModel();
+    const model = getConfiguredModel(config);
     const result = await complete(model, {
       systemPrompt: "You are a concise summarizer. Summarize the following conversation between a user and their scrum master assistant. Focus on decisions made, actions taken (items added/edited, sprints planned/closed, standups logged), and any important context. Keep it under 200 words.",
       messages: [{ role: "user" as const, content: transcript, timestamp: Date.now() }],

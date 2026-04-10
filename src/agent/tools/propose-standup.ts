@@ -60,7 +60,14 @@ export function createProposeStandupTool(
       }
 
       const final = result.action === "edit" ? (result.data as Standup) : standupData;
-      writeStandup(dataDir, final);
+      try {
+        writeStandup(dataDir, final);
+      } catch (err) {
+        return {
+          content: [{ type: "text", text: `Failed to write standup: ${err instanceof Error ? err.message : err}` }],
+          details: { error: "write_failed" },
+        };
+      }
 
       return {
         content: [{ type: "text", text: `Standup for ${final.date} saved.` }],

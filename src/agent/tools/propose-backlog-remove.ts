@@ -41,7 +41,14 @@ export function createProposeBacklogRemoveTool(
         };
       }
 
-      removeItem(dataDir, item_id);
+      try {
+        removeItem(dataDir, item_id);
+      } catch (err) {
+        return {
+          content: [{ type: "text", text: `Failed to write backlog: ${err instanceof Error ? err.message : err}` }],
+          details: { error: "write_failed" },
+        };
+      }
       return {
         content: [{ type: "text", text: `Removed item ${item_id} ("${item.title}") from backlog.` }],
         details: { action: "accepted", item },

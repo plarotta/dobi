@@ -72,36 +72,43 @@ export function createProposeSprintCloseTool(
           ? (result.data as { incomplete_action: "backlog" | "carry" }).incomplete_action
           : incomplete_action;
 
-      const closeResult = closeSprint(dataDir, sprint.number);
-      if (!closeResult) {
+      try {
+        const closeResult = closeSprint(dataDir, sprint.number);
+        if (!closeResult) {
+          return {
+            content: [{ type: "text", text: "Failed to close sprint." }],
+            details: { error: "close_failed" },
+          };
+        }
+
+        if (finalAction === "backlog" && closeResult.incompleteItems.length > 0) {
+          // Reset incomplete items to todo before adding to backlog
+          const resetItems = closeResult.incompleteItems.map((i) => ({
+            ...i,
+            status: "todo" as const,
+          }));
+          addItems(dataDir, resetItems);
+        }
+
         return {
-          content: [{ type: "text", text: "Failed to close sprint." }],
-          details: { error: "close_failed" },
+          content: [
+            {
+              type: "text",
+              text: `Closed Sprint ${sprint.number}. ${completedPts}/${sprint.plannedPoints} pts completed.${
+                closeResult.incompleteItems.length > 0
+                  ? ` ${closeResult.incompleteItems.length} incomplete item(s) ${finalAction === "backlog" ? "moved to backlog" : "left for next sprint"}.`
+                  : ""
+              }`,
+            },
+          ],
+          details: { action: result.action, sprint: closeResult.sprint },
+        };
+      } catch (err) {
+        return {
+          content: [{ type: "text", text: `Failed to close sprint: ${err instanceof Error ? err.message : err}` }],
+          details: { error: "write_failed" },
         };
       }
-
-      if (finalAction === "backlog" && closeResult.incompleteItems.length > 0) {
-        // Reset incomplete items to todo before adding to backlog
-        const resetItems = closeResult.incompleteItems.map((i) => ({
-          ...i,
-          status: "todo" as const,
-        }));
-        addItems(dataDir, resetItems);
-      }
-
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Closed Sprint ${sprint.number}. ${completedPts}/${sprint.plannedPoints} pts completed.${
-              closeResult.incompleteItems.length > 0
-                ? ` ${closeResult.incompleteItems.length} incomplete item(s) ${finalAction === "backlog" ? "moved to backlog" : "left for next sprint"}.`
-                : ""
-            }`,
-          },
-        ],
-        details: { action: result.action, sprint: closeResult.sprint },
-      };
     },
   };
 }

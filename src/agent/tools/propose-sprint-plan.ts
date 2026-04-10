@@ -81,28 +81,35 @@ export function createProposeSprintPlanTool(
           ? (result.data as typeof proposalData)
           : proposalData;
 
-      const sprint = createSprint(
-        dataDir,
-        final.goal,
-        final.duration_weeks,
-        final.start_date,
-        final.items
-      );
+      try {
+        const sprint = createSprint(
+          dataDir,
+          final.goal,
+          final.duration_weeks,
+          final.start_date,
+          final.items
+        );
 
-      // Remove planned items from backlog
-      const plannedIds = new Set(final.items.map((i) => i.id));
-      const remaining = backlog.filter((i) => !plannedIds.has(i.id));
-      writeBacklog(dataDir, remaining);
+        // Remove planned items from backlog
+        const plannedIds = new Set(final.items.map((i) => i.id));
+        const remaining = backlog.filter((i) => !plannedIds.has(i.id));
+        writeBacklog(dataDir, remaining);
 
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Created Sprint ${sprint.number} "${sprint.goal}" with ${sprint.plannedPoints} pts (${sprint.items.length} items).`,
-          },
-        ],
-        details: { action: result.action, sprint },
-      };
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Created Sprint ${sprint.number} "${sprint.goal}" with ${sprint.plannedPoints} pts (${sprint.items.length} items).`,
+            },
+          ],
+          details: { action: result.action, sprint },
+        };
+      } catch (err) {
+        return {
+          content: [{ type: "text", text: `Failed to create sprint: ${err instanceof Error ? err.message : err}` }],
+          details: { error: "write_failed" },
+        };
+      }
     },
   };
 }
