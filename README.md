@@ -2,28 +2,43 @@
 
 An AI-powered personal scrum master that runs in your terminal. You chat naturally; the LLM proposes changes to your backlog, sprints, standups, and retros; you approve, edit, or reject via interactive cards. All state persists as markdown files in a local `.dobi/` directory.
 
-Built on the [pi stack](https://github.com/nicepkg/pi) (`pi-ai`, `pi-agent-core`, `pi-tui`).
-
 ## Quick start
 
 ```bash
-# Install dependencies
-npm install
-
-# Set your Anthropic API key
-export ANTHROPIC_API_KEY=sk-ant-...
-
-# Build and run
-npm run build
-npm start
-
-# to use in other projects, run this once and then you should be able to use dobi commands outside of this repo
-npm link 
+npm install -g @plarotta/dobi
 ```
 
-(will publish to npm after some user testing)
+Then `cd` into any project and run:
 
-On first launch, dobi creates a `.dobi/` directory in your project root and walks you through setting up your first backlog items.
+```bash
+dobi
+```
+
+On first launch, dobi will walk you through selecting an LLM provider (Anthropic, OpenAI, Google Gemini, xAI, Groq, or OpenRouter) and entering your API key. Config is saved to `~/.dobi/config.json`.
+
+After setup, dobi creates a `.dobi/` directory in your project and helps you set up your first backlog items.
+
+### Supported providers
+
+| Provider | Default model | Env var |
+| --- | --- | --- |
+| Anthropic | `claude-sonnet-4-20250514` | `ANTHROPIC_API_KEY` |
+| OpenAI | `gpt-4o` | `OPENAI_API_KEY` |
+| Google Gemini | `gemini-2.0-flash` | `GOOGLE_API_KEY` |
+| xAI | `grok-3-mini` | `XAI_API_KEY` |
+| Groq | `llama-3.3-70b-versatile` | `GROQ_API_KEY` |
+| OpenRouter | `anthropic/claude-sonnet-4` | `OPENROUTER_API_KEY` |
+
+You can also skip the setup wizard by setting env vars directly:
+
+```bash
+export DOBI_PROVIDER=anthropic
+export DOBI_API_KEY=sk-ant-...
+# Optional: override the default model
+export DOBI_MODEL=claude-sonnet-4-20250514
+```
+
+Or, for backwards compatibility, just set `ANTHROPIC_API_KEY`.
 
 ## Usage
 
@@ -123,6 +138,14 @@ Status: `[ ]` = todo, `[~]` = in progress, `[x]` = done.
 ## Development
 
 ```bash
+git clone https://github.com/plarotta/dobi.git
+cd dobi
+npm install
+npm run build
+npm start
+```
+
+```bash
 npm run build              # Compile TypeScript
 npm run dev                # Watch mode
 npm run test               # Run all tests
@@ -130,58 +153,13 @@ npm run test:watch         # Watch mode for tests
 npx vitest run tests/data/backlog.test.ts   # Single test file
 ```
 
-### Architecture
-
-```text
-src/
-  index.ts                 # Entry point: CLI/TUI mode, arg parsing
-  config.ts                # LLM model configuration
-
-  data/                    # Pure data layer -- all functions take dataDir, no globals
-    paths.ts               # .dobi/ directory resolution
-    items.ts               # Item type, ID generation, status transitions
-    markdown.ts            # Round-trip safe markdown parsing/serialization
-    backlog.ts             # Backlog CRUD
-    sprints.ts             # Sprint lifecycle (create, update, close)
-    standups.ts            # Standup read/write
-    retros.ts              # Retro read/write
-    velocity.ts            # Velocity computation from sprint history
-
-  agent/                   # LLM agent with 13 tools
-    agent.ts               # Agent creation, tool wiring
-    system-prompt.ts       # Scrum master persona + live context
-    approval.ts            # Promise-based approval flow
-    session.ts             # Session persistence and LLM-based pruning
-    tools/                 # 5 read tools + 8 propose tools
-
-  tui/                     # Terminal UI
-    app.ts                 # Root layout, mode switching, keybindings
-    theme.ts               # Colors and styling
-    chat/                  # Chat view, messages, approval cards, input
-    dashboard/             # Board, backlog, velocity, log, retros panels
-```
-
 ### Tech stack
 
 - **TypeScript** (strict, ESM, ES2022)
-- **pi-ai** -- multi-provider LLM routing
+- **[pi-ai](https://github.com/nicepkg/pi)** -- multi-provider LLM routing
 - **pi-agent-core** -- agent loop, tool calling, event streaming
 - **pi-tui** -- terminal UI framework
 - **vitest** -- testing
-
-## Todo
-
-- [x] **Fix timezone bug in sprint date calculation** (`src/data/sprints.ts`) -- Parse date components directly to avoid UTC/local mismatch.
-- [x] **Remove non-null assertion in sprint listing** (`src/data/sprints.ts`) -- Use optional chaining with a fallback.
-- [x] **Re-validate transitions after approval edit** (`src/agent/tools/propose-sprint-update.ts`) -- Re-check `isValidTransition()` on edited updates before applying.
-- [x] **Collect all validation errors in sprint update** (`src/agent/tools/propose-sprint-update.ts`) -- Batch all errors so the user sees them at once.
-- [x] **Add try/catch around file I/O in propose tools** (`src/agent/tools/propose-*.ts`) -- All 8 propose tools now catch write errors and return them to the agent.
-
-## Docs
-
-- [`docs/prd.md`](docs/prd.md) -- Product requirements
-- [`docs/plan.md`](docs/plan.md) -- Implementation plan
-- [`CLAUDE.md`](CLAUDE.md) -- Claude Code context (architecture details, API references)
 
 ## License
 
